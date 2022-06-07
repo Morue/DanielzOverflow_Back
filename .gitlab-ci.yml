@@ -1,0 +1,52 @@
+image: ruby:latest
+
+
+#étapes
+stages:
+  - test
+  - deploy
+
+#jobs
+test:
+  stage: test
+  before_script:
+    - gem install dpl
+    - wget -qO- https://cli-assets.heroku.com/install-ubuntu.sh | sh
+  script:
+    - dpl --provider=heroku --app=$HEROKU_DEV_APP_NAME --api-key=$HEROKU_APIKEY
+    - heroku run --app $HEROKU_DEV_APP_NAME python manage.py test
+    - echo "test terminé"
+
+
+
+#job
+Deployment-dev:
+  stage: deploy
+  only:
+    - develop
+  before_script:
+    - gem install dpl
+    - wget -qO- https://cli-assets.heroku.com/install-ubuntu.sh | sh
+  script:
+    - dpl --provider=heroku --app=$HEROKU_DEV_APP_NAME --api-key=$HEROKU_APIKEY
+    - export HEROKU_API_KEY=$HEROKU_APIKEY
+    - heroku run --app $HEROKU_DEV_APP_NAME python manage.py migrate
+  environment:
+    name: dev
+    url: $HEROKU_DEV_APP_HOST
+
+#job
+Deployment-prod:
+  stage: deploy
+  only:
+    - master
+  before_script:
+    - gem install dpl
+    - wget -qO- https://cli-assets.heroku.com/install-ubuntu.sh | sh
+  script:
+    - dpl --provider=heroku --app=$HEROKU_PROD_APP_NAME --api-key=$HEROKU_APIKEY
+    - export HEROKU_API_KEY=$HEROKU_APIKEY
+    - heroku run --app $HEROKU_PROD_APP_NAME python manage.py migrate
+  environment:
+    name: production
+    url: $HEROKU_PROD_APP_HOST
